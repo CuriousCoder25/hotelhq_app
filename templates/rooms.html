@@ -1,0 +1,73 @@
+<!-- templates/rooms.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-bed"></i> Room Management</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Room #</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Guest</th>
+                                <th>Check-in</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for room in rooms %}
+                            <tr>
+                                <td><strong>{{ room.room_number }}</strong></td>
+                                <td>{{ room.Room_Category }}</td>
+                                <td>${{ "%.2f"|format(room.Room_Price) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if room.Status == 'Available' else 'danger' if room.Status == 'Occupied' else 'warning' }}">
+                                        {{ room.Status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if room.First_Name %}
+                                        {{ room.First_Name }} {{ room.Last_Name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if room.Check_In %}
+                                        {{ room.Check_In.strftime('%Y-%m-%d %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if room.Status == 'Available' %}
+                                        <button class="btn btn-sm btn-success" onclick="checkinRoom({{ room.Room_ID }})">
+                                            <i class="fas fa-sign-in-alt"></i> Check In
+                                        </button>
+                                    {% elif room.Status == 'Occupied' %}
+                                        <button class="btn btn-sm btn-warning" onclick="checkoutRoom({{ room.Room_ID }})">
+                                            <i class="fas fa-sign-out-alt"></i> Check Out
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
