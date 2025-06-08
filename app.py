@@ -405,32 +405,32 @@ def pay_bill(bill_id):
     
     return jsonify({'success': False, 'error': 'Database connection failed'})
 
+@app.route('/create_test_user')
+def create_test_user():
+    """Temporary route to create test user"""
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Create hashed password for 'admin123'
+            hashed_password = generate_password_hash('admin123')
+            
+            # Insert or update admin user
+            query = """
+            INSERT INTO login (Username, Password, Role_ID, is_active) 
+            VALUES ('admin', %s, 1, TRUE)
+            ON DUPLICATE KEY UPDATE Password = %s
+            """
+            cursor.execute(query, (hashed_password, hashed_password))
+            connection.commit()
+            
+            return "Test user created! Username: admin, Password: admin123"
+        except Error as e:
+            return f"Error: {e}"
+        finally:
+            cursor.close()
+            connection.close()
+    return "Database connection failed"
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-# Requirements.txt content:
-"""
-Flask==2.3.3
-mysql-connector-python==8.1.0
-Werkzeug==2.3.7
-"""
-
-# Config.py content:
-"""
-import os
-
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-this-in-production'
-    
-    # Database configuration
-    DB_HOST = os.environ.get('DB_HOST') or 'localhost'
-    DB_NAME = os.environ.get('DB_NAME') or 'hotel_management'
-    DB_USER = os.environ.get('DB_USER') or 'root'
-    DB_PASSWORD = os.environ.get('DB_PASSWORD') or ''
-    
-    # Pagination
-    POSTS_PER_PAGE = 10
-    
-    # File upload
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
-"""
+    app.run(debug=True)
