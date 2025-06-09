@@ -1,4 +1,4 @@
-#HotelHQ 
+
 ## HotelHQ is an web based Hotel and Resturant Booking Sales/Inventory Management System
 
 **Main Features**
