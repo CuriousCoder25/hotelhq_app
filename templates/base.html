@@ -10,8 +10,27 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
+    {% if not session.user_id %}
+    <!-- Navigation for non-authenticated users -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('login') }}">
+                <i class="fas fa-hotel"></i> Hotel Management
+            </a>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    {% endif %}
+
     {% if session.user_id %}
-    <!-- Navigation -->
+    <!-- Navigation for authenticated users -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('dashboard') }}">
@@ -38,12 +57,23 @@
                         <a class="nav-link" href="{{ url_for('customers') }}">
                             <i class="fas fa-users"></i> Customers
                         </a>
-                    </li>
-                    <li class="nav-item">
+                    </li>                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('billing') }}">
                             <i class="fas fa-receipt"></i> Billing
                         </a>
                     </li>
+                    {% if session.role == 'Admin' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('schema_update_page') }}">
+                                <i class="fas fa-database"></i> Schema Update
+                            </a></li>
+                        </ul>
+                    </li>
+                    {% endif %}
                 </ul>
                 
                 <ul class="navbar-nav">
