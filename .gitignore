@@ -118,9 +118,17 @@ ipython_config.py
 
 # Personal Files (Screenshots, temp docs)
 Screenshot*.png
+Screenshot*.jpg
+WhatsApp*.jpg
 ~$*.docx
 ~$*.xlsx
 ~$*.pptx
+
+# Project Documentation (Keep core docs, exclude personal files)
+project II documents/Screenshot*
+project II documents/WhatsApp*
+project II documents/~$*
+project II documents/new/mariadb/Screenshot*
 
 # Backup files
 *.bak

@@ -115,11 +115,14 @@ hotelhq_app/
 │   ├── base.html
 │   ├── dashboard.html
 │   ├── login.html
+│   ├── signup.html
 │   ├── rooms.html
 │   ├── customers.html
+│   ├── customer_portal.html
 │   ├── billing.html
 │   ├── staff_management.html
-│   └── customer_portal.html
+│   ├── staff_dashboard.html
+│   └── schema_update.html
 └── the database/         # SQL schema files
     └── hotel_management_new.sql
 ```
