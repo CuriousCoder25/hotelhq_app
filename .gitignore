@@ -73,6 +73,13 @@ config.py
 *.sql.backup
 *.dump
 
+# DATABASE SCHEMA - INCLUDE THESE
+# The database folder contains important schema files
+!/the database/
+!the database/*.sql
+the database/.DS_Store
+the database/Thumbs.db
+
 # Logs
 *.log
 logs/
@@ -116,19 +123,19 @@ target/
 profile_default/
 ipython_config.py
 
-# Personal Files (Screenshots, temp docs)
-Screenshot*.png
-Screenshot*.jpg
-WhatsApp*.jpg
+# Personal Files (Only exclude personal screenshots in root, not project docs)
+# Keep project documentation screenshots but exclude personal ones
 ~$*.docx
 ~$*.xlsx
 ~$*.pptx
 
-# Project Documentation (Keep core docs, exclude personal files)
-project II documents/Screenshot*
-project II documents/WhatsApp*
-project II documents/~$*
-project II documents/new/mariadb/Screenshot*
+# PROJECT DOCUMENTATION - INCLUDE THESE
+# The "project II documents" folder contains important project documentation
+# Including ER diagrams, proposals, and project specifications
+# This folder should be tracked in Git
+!/project II documents/
+project II documents/.DS_Store
+project II documents/Thumbs.db
 
 # Backup files
 *.bak
@@ -175,3 +182,14 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# EXCLUDE SPECIFIC FILES
+# Git log output accidentally saved as file
+ersgauraDesktophotelhq_app
+# Personal screenshots in root (but keep project screenshots in documentation)
+Screenshot*.png
+*.png
+# Include only project documentation images
+!project II documents/**/*.png
+!project II documents/**/*.jpg
+!project II documents/**/*.jpeg
