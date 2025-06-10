@@ -71,6 +71,18 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def staff_required(f):
+    """Decorator to require staff or admin role for protected routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        if session.get('role') not in ['Admin', 'Staff']:
+            flash('Access denied. Staff privileges required.', 'error')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
 def index():
     """Home page - redirect to login or dashboard"""
@@ -132,10 +144,20 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    """Main dashboard"""
-    # Redirect customers to their own portal
-    if session.get('role') == 'Customer':
+    """Main dashboard with role-based redirection"""
+    user_role = session.get('role')
+    
+    # Redirect users to their specific dashboards
+    if user_role == 'Customer':
         return redirect(url_for('customer_portal'))
+    elif user_role == 'Staff':
+        return redirect(url_for('staff_dashboard'))
+    elif user_role == 'Admin':
+        # Show admin dashboard
+        pass
+    else:
+        flash('Invalid user role', 'error')
+        return redirect(url_for('logout'))
     
     connection = get_db_connection()
     stats = {
@@ -143,8 +165,10 @@ def dashboard():
         'occupied_rooms': 0,
         'available_rooms': 0,
         'total_customers': 0,
+        'total_staff': 0,
         'pending_bills': 0,
-        'total_revenue': 0
+        'total_revenue': 0,
+        'pending_documents': 0
     }
     
     if connection:
@@ -1139,6 +1163,420 @@ def customer_pay_bill(bill_id):
             
             connection.commit()
             return jsonify({'success': True, 'message': 'Payment processed successfully'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/staff_management')
+@admin_required
+def staff_management():
+    """Staff management page - Admin only"""
+    connection = get_db_connection()
+    staff_members = []
+    staff_stats = {
+        'total': 0,
+        'active': 0,
+        'inactive': 0,
+        'new_this_month': 0
+    }
+    
+    if connection:
+        cursor = connection.cursor(dictionary=True)
+        try:
+            # First, check if created_at column exists in login table
+            cursor.execute("DESCRIBE login")
+            login_columns = [col['Field'] for col in cursor.fetchall()]
+            
+            # Build query based on available columns
+            if 'created_at' in login_columns:
+                query = """
+                SELECT l.User_ID, l.Username, l.is_active, l.created_at, l.last_login,
+                       s.First_Name, s.Last_Name, s.email, s.Mobile_no, s.position, s.hire_date
+                FROM login l 
+                LEFT JOIN staff s ON l.User_ID = s.User_ID
+                WHERE l.Role_ID = 2
+                ORDER BY l.created_at DESC
+                """
+            else:
+                # Fallback query without created_at column
+                query = """
+                SELECT l.User_ID, l.Username, l.is_active, l.last_login,
+                       s.First_Name, s.Last_Name, s.email, s.Mobile_no, s.position, s.hire_date
+                FROM login l 
+                LEFT JOIN staff s ON l.User_ID = s.User_ID
+                WHERE l.Role_ID = 2
+                ORDER BY l.User_ID DESC
+                """
+            
+            cursor.execute(query)
+            staff_members = cursor.fetchall()
+            
+            # Debug: print raw results
+            print(f"Debug: Found {len(staff_members)} staff members")
+            if staff_members:
+                print(f"Debug: First staff member keys: {list(staff_members[0].keys()) if staff_members[0] else 'None'}")
+            
+            # Calculate statistics safely
+            staff_stats['total'] = len(staff_members) if staff_members else 0
+            staff_stats['active'] = len([s for s in staff_members if s and s.get('is_active')]) if staff_members else 0
+            staff_stats['inactive'] = len([s for s in staff_members if s and not s.get('is_active')]) if staff_members else 0
+            
+            # Count new staff this month
+            from datetime import datetime, timedelta
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+            staff_stats['new_this_month'] = 0
+            if staff_members:
+                staff_stats['new_this_month'] = len([
+                    s for s in staff_members 
+                    if s and s.get('hire_date') and s['hire_date'] >= thirty_days_ago.date()
+                ])
+            
+        except Error as e:
+            print(f"Database Error: {e}")  # Debug print
+            flash(f'Error loading staff: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return render_template('staff_management.html', staff_members=staff_members, staff_stats=staff_stats)
+
+@app.route('/api/staff/add', methods=['POST'])
+@admin_required
+def add_staff():
+    """API endpoint to add new staff member"""
+    data = request.json
+    
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Check if username already exists
+            cursor.execute("SELECT Username FROM login WHERE Username = %s", (data['username'],))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Username already exists'})
+            
+            # Create login account with STAFF role (Role_ID = 2)
+            hashed_password = generate_password_hash(data['password'])
+            cursor.execute("""
+                INSERT INTO login (Username, Password, Role_ID, is_active) 
+                VALUES (%s, %s, 2, TRUE)
+            """, (data['username'], hashed_password))
+            
+            user_id = cursor.lastrowid
+            
+            # Create staff record
+            cursor.execute("""
+                INSERT INTO staff (User_ID, First_Name, Last_Name, email, Mobile_no, position, hire_date) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, data['first_name'], data['last_name'], data['email'], 
+                  data['phone'], data['position'], datetime.now().date()))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Staff member added successfully'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/api/staff/<int:staff_id>/delete', methods=['DELETE'])
+@admin_required
+def delete_staff(staff_id):
+    """API endpoint to delete staff member"""
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Check if staff exists
+            cursor.execute("SELECT User_ID FROM staff WHERE User_ID = %s", (staff_id,))
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Staff member not found'})
+            
+            # Delete staff record
+            cursor.execute("DELETE FROM staff WHERE User_ID = %s", (staff_id,))
+            
+            # Delete login record
+            cursor.execute("DELETE FROM login WHERE User_ID = %s", (staff_id,))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Staff member deleted successfully'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/api/staff/<int:staff_id>/toggle', methods=['PUT'])
+@admin_required
+def toggle_staff_status(staff_id):
+    """API endpoint to toggle staff active/inactive status"""
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Toggle is_active status
+            cursor.execute("""
+                UPDATE login 
+                SET is_active = NOT is_active 
+                WHERE User_ID = %s AND Role_ID = 2
+            """, (staff_id,))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Staff status updated successfully'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/staff_dashboard')
+@login_required
+def staff_dashboard():
+    """Staff dashboard - for staff members only"""
+    if session.get('role') != 'Staff':
+        return redirect(url_for('dashboard'))
+    
+    connection = get_db_connection()
+    staff_data = {
+        'pending_documents': [],
+        'today_checkins': [],
+        'today_checkouts': [],
+        'available_rooms': [],
+        'recent_bookings': [],
+        'stats': {
+            'pending_docs': 0,
+            'today_checkins': 0,
+            'available_rooms': 0,
+            'total_customers': 0
+        }
+    }
+    
+    if connection:
+        cursor = connection.cursor(dictionary=True)
+        try:
+            # Get customers with pending document verification
+            cursor.execute("""
+                SELECT c.*, l.Username 
+                FROM customer c 
+                JOIN login l ON c.User_ID = l.User_ID 
+                WHERE c.document_status != 'Approved' OR c.document_status IS NULL
+                ORDER BY c.User_ID DESC
+                LIMIT 10
+            """)
+            staff_data['pending_documents'] = cursor.fetchall()
+            staff_data['stats']['pending_docs'] = len(staff_data['pending_documents'])
+            
+            # Get today's check-ins
+            cursor.execute("""
+                SELECT r.*, c.First_Name, c.Last_Name 
+                FROM room r 
+                JOIN customer c ON r.User_ID = c.User_ID 
+                WHERE DATE(r.Check_In) = CURDATE() AND r.Status = 'Occupied'
+                ORDER BY r.Check_In DESC
+            """)
+            staff_data['today_checkins'] = cursor.fetchall()
+            staff_data['stats']['today_checkins'] = len(staff_data['today_checkins'])
+            
+            # Get available rooms
+            cursor.execute("""
+                SELECT Room_ID, room_number, Room_type, Room_Price, Status 
+                FROM room 
+                WHERE Status IN ('Available', 'Clean')
+                ORDER BY room_number
+            """)
+            staff_data['available_rooms'] = cursor.fetchall()
+            staff_data['stats']['available_rooms'] = len(staff_data['available_rooms'])
+            
+            # Get total customers
+            cursor.execute("SELECT COUNT(*) as total FROM customer")
+            staff_data['stats']['total_customers'] = cursor.fetchone()['total']
+            
+            # Get recent bookings
+            cursor.execute("""
+                SELECT r.*, c.First_Name, c.Last_Name 
+                FROM room r 
+                JOIN customer c ON r.User_ID = c.User_ID 
+                WHERE r.Status = 'Occupied'
+                ORDER BY r.Check_In DESC
+                LIMIT 5
+            """)
+            staff_data['recent_bookings'] = cursor.fetchall()
+            
+        except Error as e:
+            flash(f'Error loading dashboard: {e}', 'error')
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return render_template('staff_dashboard.html', data=staff_data)
+
+# Staff API endpoints for customer management and document verification
+
+@app.route('/api/staff/customer/add', methods=['POST'])
+@staff_required
+def staff_add_customer():
+    """API endpoint for staff to add new customers"""
+    data = request.json
+    
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Check if username already exists
+            cursor.execute("SELECT Username FROM login WHERE Username = %s", (data['username'],))
+            if cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Username already exists'})
+            
+            # Create login account with CUSTOMER role (Role_ID = 3)
+            hashed_password = generate_password_hash(data['password'])
+            cursor.execute("""
+                INSERT INTO login (Username, Password, Role_ID, is_active) 
+                VALUES (%s, %s, 3, TRUE)
+            """, (data['username'], hashed_password))
+            
+            user_id = cursor.lastrowid
+            
+            # Create customer record
+            cursor.execute("""
+                INSERT INTO customer (User_ID, First_Name, Last_Name, email, Mobile_no, address, document_status) 
+                VALUES (%s, %s, %s, %s, %s, %s, 'Pending')
+            """, (user_id, data['first_name'], data['last_name'], data['email'], 
+                  data['phone'], data['address']))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Customer added successfully', 'user_id': user_id})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/api/staff/room/<int:room_id>/book', methods=['POST'])
+@staff_required
+def staff_book_room():
+    """API endpoint for staff to book rooms for customers"""
+    data = request.json
+    room_id = data.get('room_id')
+    customer_id = data.get('customer_id')
+    
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Check if room is available
+            cursor.execute("SELECT Status FROM room WHERE Room_ID = %s", (room_id,))
+            room = cursor.fetchone()
+            
+            if not room or room[0] not in ['Available', 'Clean']:
+                return jsonify({'success': False, 'error': 'Room not available'})
+            
+            # Check if customer exists
+            cursor.execute("SELECT User_ID FROM customer WHERE User_ID = %s", (customer_id,))
+            if not cursor.fetchone():
+                return jsonify({'success': False, 'error': 'Customer not found'})
+            
+            # Book the room
+            cursor.execute("""
+                UPDATE room 
+                SET Status = 'Occupied', User_ID = %s, Check_In = %s 
+                WHERE Room_ID = %s
+            """, (customer_id, datetime.now(), room_id))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Room booked successfully'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/api/staff/document/verify/<int:customer_id>', methods=['PUT'])
+@staff_required
+def verify_customer_documents(customer_id):
+    """API endpoint for staff to verify customer documents"""
+    data = request.json
+    status = data.get('status')  # 'Approved', 'Rejected', 'Pending'
+    notes = data.get('notes', '')
+    
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Update customer document status
+            cursor.execute("""
+                UPDATE customer 
+                SET document_status = %s, verification_notes = %s, verified_by = %s, verification_date = %s
+                WHERE User_ID = %s
+            """, (status, notes, session['username'], datetime.now(), customer_id))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': f'Document status updated to {status}'})
+            
+        except Error as e:
+            connection.rollback()
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
+
+@app.route('/api/staff/booking/confirm/<int:room_id>', methods=['POST'])
+@staff_required
+def confirm_booking(room_id):
+    """API endpoint for staff to confirm customer bookings"""
+    data = request.json
+    customer_id = data.get('customer_id')
+    
+    connection = get_db_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            # Check if customer documents are approved
+            cursor.execute("SELECT document_status FROM customer WHERE User_ID = %s", (customer_id,))
+            customer = cursor.fetchone()
+            
+            if not customer:
+                return jsonify({'success': False, 'error': 'Customer not found'})
+            
+            if customer[0] != 'Approved':
+                return jsonify({'success': False, 'error': 'Customer documents must be verified before confirming booking'})
+            
+            # Update room booking confirmation
+            cursor.execute("""
+                UPDATE room 
+                SET booking_confirmed = TRUE, confirmed_by = %s, confirmation_date = %s
+                WHERE Room_ID = %s AND User_ID = %s
+            """, (session['username'], datetime.now(), room_id, customer_id))
+            
+            connection.commit()
+            return jsonify({'success': True, 'message': 'Booking confirmed successfully'})
             
         except Error as e:
             connection.rollback()

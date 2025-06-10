@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - Hotel Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-user-tie"></i> Staff Dashboard</h1>
+                <div class="text-muted">
+                    Welcome, {{ session.username }} | <small>{{ session.role }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ data.stats.pending_docs }}</h4>
+                            <p class="mb-0">Pending Documents</p>
+                        </div>
+                        <i class="fas fa-file-alt fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ data.stats.today_checkins }}</h4>
+                            <p class="mb-0">Today's Check-ins</p>
+                        </div>
+                        <i class="fas fa-sign-in-alt fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ data.stats.available_rooms }}</h4>
+                            <p class="mb-0">Available Rooms</p>
+                        </div>
+                        <i class="fas fa-bed fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h4 class="mb-0">{{ data.stats.total_customers }}</h4>
+                            <p class="mb-0">Total Customers</p>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                            <i class="fas fa-user-plus"></i> Add New Customer
+                        </button>
+                        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#bookRoomModal">
+                            <i class="fas fa-calendar-plus"></i> Book Room
+                        </button>
+                        <button class="btn btn-outline-info" onclick="refreshDocuments()">
+                            <i class="fas fa-sync-alt"></i> Refresh Documents
+                        </button>
+                        <a href="/customers" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> View All Customers
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Available Rooms -->
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-bed"></i> Available Rooms ({{ data.stats.available_rooms }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if data.available_rooms %}
+                    <div class="list-group list-group-flush">
+                        {% for room in data.available_rooms[:5] %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Room {{ room.room_number }}</strong><br>
+                                <small class="text-muted">{{ room.Room_type or 'Standard' }} - ${{ "%.2f"|format(room.Room_Price or 0) }}/night</small>
+                            </div>
+                            <span class="badge bg-success">Available</span>
+                        </div>
+                        {% endfor %}
+                        {% if data.available_rooms|length > 5 %}
+                        <div class="list-group-item text-center">
+                            <small class="text-muted">+{{ data.available_rooms|length - 5 }} more rooms</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No rooms available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Verification -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-file-check"></i> Document Verification Queue</h5>
+                </div>
+                <div class="card-body">
+                    {% if data.pending_documents %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in data.pending_documents %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ customer.First_Name or 'N/A' }} {{ customer.Last_Name or '' }}</strong><br>
+                                        <small class="text-muted">ID: {{ customer.User_ID }}</small>
+                                    </td>
+                                    <td>{{ customer.email or 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            {{ customer.document_status or 'Pending' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group-vertical btn-group-sm">
+                                            <button class="btn btn-outline-success btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Approved')">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Rejected')">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>All documents verified!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Check-ins & Recent Bookings -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-calendar-day"></i> Today's Activity</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Today's Check-ins ({{ data.stats.today_checkins }})</h6>
+                    {% if data.today_checkins %}
+                    <div class="list-group list-group-flush mb-3">
+                        {% for checkin in data.today_checkins[:3] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ checkin.First_Name }} {{ checkin.Last_Name }}</strong><br>
+                                    <small class="text-muted">Room {{ checkin.room_number }}</small>
+                                </div>
+                                <small class="text-muted">{{ checkin.Check_In.strftime('%H:%M') if checkin.Check_In else 'N/A' }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No check-ins today</p>
+                    {% endif %}
+
+                    <h6>Recent Bookings</h6>
+                    {% if data.recent_bookings %}
+                    <div class="list-group list-group-flush">
+                        {% for booking in data.recent_bookings[:3] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ booking.First_Name }} {{ booking.Last_Name }}</strong><br>
+                                    <small class="text-muted">Room {{ booking.room_number }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary">Occupied</span>
+                                    {% if not booking.booking_confirmed %}
+                                    <br><button class="btn btn-xs btn-outline-warning mt-1" onclick="confirmBooking({{ booking.Room_ID }}, {{ booking.User_ID }})">
+                                        <i class="fas fa-check"></i> Confirm
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted small">No recent bookings</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addCustomerForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="custFirstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="custLastName" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Username *</label>
+                                <input type="text" class="form-control" id="custUsername" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Password *</label>
+                                <input type="password" class="form-control" id="custPassword" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="custEmail">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="custPhone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea class="form-control" id="custAddress" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Book Room Modal -->
+<div class="modal fade" id="bookRoomModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Book Room for Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="bookRoomForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Customer ID *</label>
+                        <input type="number" class="form-control" id="bookCustomerId" required>
+                        <div class="form-text">Enter the customer's User ID</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Room *</label>
+                        <select class="form-select" id="bookRoomId" required>
+                            <option value="">Select a room</option>
+                            {% for room in data.available_rooms %}
+                            <option value="{{ room.Room_ID }}">
+                                Room {{ room.room_number }} - {{ room.Room_type or 'Standard' }} (${{ "%.2f"|format(room.Room_Price or 0) }}/night)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Book Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add customer form submission
+document.getElementById('addCustomerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        first_name: document.getElementById('custFirstName').value,
+        last_name: document.getElementById('custLastName').value,
+        username: document.getElementById('custUsername').value,
+        password: document.getElementById('custPassword').value,
+        email: document.getElementById('custEmail').value,
+        phone: document.getElementById('custPhone').value,
+        address: document.getElementById('custAddress').value
+    };
+    
+    fetch('/api/staff/customer/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Customer added successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error adding customer: ' + error);
+    });
+});
+
+// Book room form submission
+document.getElementById('bookRoomForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const customerId = document.getElementById('bookCustomerId').value;
+    const roomId = document.getElementById('bookRoomId').value;
+    
+    fetch('/api/staff/room/' + roomId + '/book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            room_id: roomId,
+            customer_id: customerId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Room booked successfully!');
+            bootstrap.Modal.getInstance(document.getElementById('bookRoomModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error booking room: ' + error);
+    });
+});
+
+// Document verification
+function verifyDocument(customerId, status) {
+    const notes = prompt(`Enter verification notes for ${status.toLowerCase()} status:`);
+    if (notes !== null) {
+        fetch(`/api/staff/document/verify/${customerId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                status: status,
+                notes: notes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Document status updated successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+// Confirm booking
+function confirmBooking(roomId, customerId) {
+    if (confirm('Confirm this booking? Make sure the customer documents are verified.')) {
+        fetch(`/api/staff/booking/confirm/${roomId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                customer_id: customerId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Booking confirmed successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+}
+
+// Refresh documents
+function refreshDocuments() {
+    location.reload();
+}
+</script>
+{% endblock %}
