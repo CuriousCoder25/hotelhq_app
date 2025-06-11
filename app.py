@@ -187,15 +187,13 @@ def dashboard():
             # Get customer count
             cursor.execute("SELECT COUNT(*) as total FROM customer")
             stats['total_customers'] = cursor.fetchone()['total']
-            
-            # Get billing statistics
+              # Get billing statistics
             cursor.execute("SELECT COUNT(*) as pending FROM billing WHERE Status = 'Pending'")
             stats['pending_bills'] = cursor.fetchone()['pending']
             
             cursor.execute("SELECT SUM(Total_amount) as revenue FROM billing WHERE Status = 'Paid'")
             result = cursor.fetchone()
             stats['total_revenue'] = float(result['revenue']) if result['revenue'] else 0
-            
         except Error as e:
             flash(f'Error loading dashboard: {e}', 'error')
         finally:
@@ -203,6 +201,33 @@ def dashboard():
             connection.close()
     
     return render_template('dashboard.html', stats=stats)
+
+@app.route('/api/admin/available-rooms', methods=['GET'])
+@admin_required
+def get_available_rooms_admin():
+    """API endpoint to get available rooms for admin dashboard"""
+    connection = get_db_connection()
+    rooms = []
+    
+    if connection:
+        cursor = connection.cursor(dictionary=True)
+        try:
+            query = """
+            SELECT Room_ID, room_number, Room_type, Room_Price, Status, description, room_image
+            FROM room 
+            WHERE Status IN ('Available', 'Clean')
+            ORDER BY room_number
+            """
+            cursor.execute(query)
+            rooms = cursor.fetchall()
+            return jsonify({'success': True, 'rooms': rooms})
+        except Error as e:
+            return jsonify({'success': False, 'error': str(e)})
+        finally:
+            cursor.close()
+            connection.close()
+    
+    return jsonify({'success': False, 'error': 'Database connection failed'})
 
 @app.route('/rooms')
 @admin_required  # Changed from @login_required
@@ -1520,14 +1545,36 @@ def staff_book_room():
 @staff_required
 def verify_customer_documents(customer_id):
     """API endpoint for staff to verify customer documents"""
-    data = request.json
-    status = data.get('status')  # 'Approved', 'Rejected', 'Pending'
-    notes = data.get('notes', '')
-    
-    connection = get_db_connection()
-    if connection:
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+            
+        status = data.get('status')  # 'Approved', 'Rejected', 'Pending'
+        notes = data.get('notes', '')
+        
+        # Validate status
+        valid_statuses = ['Approved', 'Rejected', 'Pending']
+        if status not in valid_statuses:
+            return jsonify({'success': False, 'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'}), 400
+        
+        # Validate notes for rejection
+        if status == 'Rejected' and not notes.strip():
+            return jsonify({'success': False, 'error': 'Rejection reason is required'}), 400
+        
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+            
         cursor = connection.cursor()
         try:
+            # First check if customer exists
+            cursor.execute("SELECT User_ID, First_Name, Last_Name FROM customer WHERE User_ID = %s", (customer_id,))
+            customer = cursor.fetchone()
+            
+            if not customer:
+                return jsonify({'success': False, 'error': 'Customer not found'}), 404
+            
             # Update customer document status
             cursor.execute("""
                 UPDATE customer 
@@ -1535,17 +1582,92 @@ def verify_customer_documents(customer_id):
                 WHERE User_ID = %s
             """, (status, notes, session['username'], datetime.now(), customer_id))
             
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'error': 'No records updated'}), 500
+            
             connection.commit()
-            return jsonify({'success': True, 'message': f'Document status updated to {status}'})
+            
+            # Log the verification action
+            print(f"Document verification: Customer {customer_id} status changed to {status} by {session['username']}")
+            
+            return jsonify({
+                'success': True, 
+                'message': f'Document status updated to {status}',
+                'customer_id': customer_id,
+                'status': status,
+                'verified_by': session['username']
+            })
             
         except Error as e:
             connection.rollback()
-            return jsonify({'success': False, 'error': str(e)})
+            print(f"Database error in verify_customer_documents: {e}")
+            return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
         finally:
             cursor.close()
             connection.close()
-    
-    return jsonify({'success': False, 'error': 'Database connection failed'})
+            
+    except Exception as e:
+        print(f"Unexpected error in verify_customer_documents: {e}")
+        return jsonify({'success': False, 'error': f'Unexpected error: {str(e)}'}), 500
+
+@app.route('/api/staff/customer/<int:customer_id>/documents', methods=['GET'])
+@staff_required
+def get_customer_documents(customer_id):
+    """API endpoint for staff to view customer documents"""
+    try:
+        connection = get_db_connection()
+        if not connection:
+            return jsonify({'success': False, 'error': 'Database connection failed'}), 500
+            
+        cursor = connection.cursor(dictionary=True)
+        try:
+            # Get customer information
+            cursor.execute("""
+                SELECT c.User_ID, c.First_Name, c.Last_Name, c.email, c.Mobile_no, 
+                       c.document_status, c.verification_notes, c.verified_by, c.verification_date
+                FROM customer c 
+                WHERE c.User_ID = %s
+            """, (customer_id,))
+            customer_info = cursor.fetchone()
+            
+            if not customer_info:
+                return jsonify({'success': False, 'error': 'Customer not found'}), 404
+            
+            # Look for uploaded documents in the documents directory
+            docs_dir = 'static/documents/customers'
+            documents = {'id_document': None, 'address_proof': None}
+            
+            if os.path.exists(docs_dir):
+                try:
+                    for filename in os.listdir(docs_dir):
+                        if filename.startswith(f"{customer_id}_id_"):
+                            documents['id_document'] = filename
+                        elif filename.startswith(f"{customer_id}_address_"):
+                            documents['address_proof'] = filename
+                except OSError as e:
+                    print(f"Error reading documents directory: {e}")
+                    # Continue without documents if directory can't be read
+            
+            # Log the document access
+            print(f"Documents accessed for customer {customer_id} by staff {session['username']}")
+            
+            return jsonify({
+                'success': True, 
+                'documents': documents,
+                'customer_info': customer_info,
+                'access_time': datetime.now().isoformat()
+            })
+            
+        except Error as e:
+            print(f"Database error in get_customer_documents: {e}")
+            return jsonify({'success': False, 'error': f'Database error: {str(e)}'}), 500
+        finally:
+            cursor.close()
+            connection.close()
+            
+    except Exception as e:
+        print(f"Unexpected error in get_customer_documents: {e}")
+        return jsonify({'success': False, 'error': f'Unexpected error: {str(e)}'}), 500
 
 @app.route('/api/staff/booking/confirm/<int:room_id>', methods=['POST'])
 @staff_required

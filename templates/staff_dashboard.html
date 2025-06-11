@@ -121,49 +121,70 @@
                     </div>
                     {% else %}
                     <p class="text-muted text-center">No rooms available</p>
-                    {% endif %}
-                </div>
+                    {% endif %}                </div>
             </div>
         </div>
 
         <!-- Document Verification -->
         <div class="col-md-5">
-            <div class="card">
+            <div class="card border-warning">
                 <div class="card-header bg-warning text-dark">
-                    <h5><i class="fas fa-file-check"></i> Document Verification Queue</h5>
+                    <h5><i class="fas fa-file-check"></i> Document Verification Queue 
+                        <span class="badge bg-dark ms-2">{{ data.stats.pending_docs }}</span>
+                    </h5>
                 </div>
                 <div class="card-body">
                     {% if data.pending_documents %}
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped">
-                            <thead>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>{{ data.stats.pending_docs }}</strong> customer(s) waiting for document verification
+                    </div>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-striped table-hover">
+                            <thead class="table-dark sticky-top">
                                 <tr>
-                                    <th>Customer</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th style="width: 30%;">Customer</th>
+                                    <th style="width: 25%;">Contact</th>
+                                    <th style="width: 15%;">Status</th>
+                                    <th style="width: 30%;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for customer in data.pending_documents %}
-                                <tr>
+                                <tr class="align-middle">
                                     <td>
-                                        <strong>{{ customer.First_Name or 'N/A' }} {{ customer.Last_Name or '' }}</strong><br>
-                                        <small class="text-muted">ID: {{ customer.User_ID }}</small>
+                                        <div>
+                                            <strong class="text-primary">{{ customer.First_Name or 'N/A' }} {{ customer.Last_Name or '' }}</strong>
+                                            <br><small class="text-muted">ID: {{ customer.User_ID }}</small>
+                                        </div>
                                     </td>
-                                    <td>{{ customer.email or 'N/A' }}</td>
                                     <td>
-                                        <span class="badge bg-warning">
+                                        <div>
+                                            <small>{{ customer.email or 'N/A' }}</small>
+                                            {% if customer.Mobile_no %}
+                                            <br><small class="text-muted">{{ customer.Mobile_no }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% set status_class = 'warning' if customer.document_status in ['Pending', None] else 'danger' if customer.document_status == 'Rejected' else 'success' %}
+                                        <span class="badge bg-{{ status_class }}">
                                             {{ customer.document_status or 'Pending' }}
                                         </span>
                                     </td>
                                     <td>
                                         <div class="btn-group-vertical btn-group-sm">
-                                            <button class="btn btn-outline-success btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Approved')">
+                                            <button class="btn btn-outline-info btn-sm" onclick="viewDocuments({{ customer.User_ID }})" title="View uploaded documents">
+                                                <i class="fas fa-eye"></i> View Docs
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Approved')" title="Approve documents">
                                                 <i class="fas fa-check"></i> Approve
                                             </button>
-                                            <button class="btn btn-outline-danger btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Rejected')">
+                                            <button class="btn btn-outline-danger btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Rejected')" title="Reject documents">
                                                 <i class="fas fa-times"></i> Reject
+                                            </button>
+                                            <button class="btn btn-outline-warning btn-sm" onclick="verifyDocument({{ customer.User_ID }}, 'Pending')" title="Reset to pending">
+                                                <i class="fas fa-clock"></i> Reset to Pending
                                             </button>
                                         </div>
                                     </td>
@@ -172,10 +193,22 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="mt-3 text-center">
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshDocuments()">
+                            <i class="fas fa-sync-alt"></i> Refresh Queue
+                        </button>
+                        <a href="/customers" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-list"></i> View All Customers
+                        </a>
+                    </div>
                     {% else %}
-                    <div class="text-center text-muted py-3">
-                        <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <p>All documents verified!</p>
+                    <div class="text-center text-success py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <h6>All documents verified!</h6>
+                        <p class="text-muted mb-0">No pending document verifications at this time.</p>
+                        <button class="btn btn-outline-primary btn-sm mt-2" onclick="refreshDocuments()">
+                            <i class="fas fa-sync-alt"></i> Check for New Documents
+                        </button>
                     </div>
                     {% endif %}
                 </div>
@@ -410,30 +443,296 @@ document.getElementById('bookRoomForm').addEventListener('submit', function(e) {
     });
 });
 
+// View documents function
+function viewDocuments(customerId) {
+    // Create a modal to display customer documents
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'viewDocumentsModal';
+    modal.setAttribute('tabindex', '-1');
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-file-alt"></i> Customer Documents - ID: ${customerId}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="documentsContent">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading documents...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="btn-group me-auto" id="verificationActions" style="display: none;">
+                        <button type="button" class="btn btn-success" onclick="quickVerify(${customerId}, 'Approved')">
+                            <i class="fas fa-check"></i> Quick Approve
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="quickVerify(${customerId}, 'Rejected')">
+                            <i class="fas fa-times"></i> Quick Reject
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="quickVerify(${customerId}, 'Pending')">
+                            <i class="fas fa-clock"></i> Set Pending
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Clean up modal when closed
+    modal.addEventListener('hidden.bs.modal', function() {
+        document.body.removeChild(modal);
+    });
+    
+    // Fetch customer documents
+    fetch(`/api/staff/customer/${customerId}/documents`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            const content = document.getElementById('documentsContent');
+            if (data.success && data.documents) {
+                // Show verification actions
+                document.getElementById('verificationActions').style.display = 'block';
+                
+                let documentsHtml = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-id-card text-primary"></i> ID Document</h6>
+                            ${data.documents.id_document ? `
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <p><strong>File:</strong> ${data.documents.id_document}</p>
+                                    <div class="text-center">
+                                        <img src="/static/documents/customers/${data.documents.id_document}" 
+                                             class="img-fluid rounded shadow" style="max-height: 300px; cursor: pointer;" 
+                                             alt="ID Document" 
+                                             onclick="openImageInNewTab('/static/documents/customers/${data.documents.id_document}')">
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="downloadDocument('/static/documents/customers/${data.documents.id_document}')">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> No ID document uploaded</div>'}
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-home text-primary"></i> Address Proof</h6>
+                            ${data.documents.address_proof ? `
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <p><strong>File:</strong> ${data.documents.address_proof}</p>
+                                    <div class="text-center">
+                                        <img src="/static/documents/customers/${data.documents.address_proof}" 
+                                             class="img-fluid rounded shadow" style="max-height: 300px; cursor: pointer;" 
+                                             alt="Address Proof"
+                                             onclick="openImageInNewTab('/static/documents/customers/${data.documents.address_proof}')">
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="downloadDocument('/static/documents/customers/${data.documents.address_proof}')">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> No address proof uploaded</div>'}
+                        </div>
+                    </div>
+                `;
+                
+                if (data.customer_info) {
+                    const statusColor = data.customer_info.document_status === 'Approved' ? 'success' : 
+                                       data.customer_info.document_status === 'Rejected' ? 'danger' : 'warning';
+                    
+                    documentsHtml += `
+                        <hr>
+                        <div class="row">
+                            <div class="col-12">
+                                <h6><i class="fas fa-info-circle text-primary"></i> Customer Information</h6>
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>Name:</strong> ${data.customer_info.First_Name || 'N/A'} ${data.customer_info.Last_Name || ''}</p>
+                                                <p><strong>Email:</strong> ${data.customer_info.email || 'N/A'}</p>
+                                                <p><strong>Phone:</strong> ${data.customer_info.Mobile_no || 'N/A'}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p><strong>Status:</strong> <span class="badge bg-${statusColor}">${data.customer_info.document_status || 'Pending'}</span></p>
+                                                ${data.customer_info.verification_notes ? `<p><strong>Notes:</strong> <em>"${data.customer_info.verification_notes}"</em></p>` : ''}
+                                                ${data.customer_info.verified_by ? `<p><strong>Verified by:</strong> ${data.customer_info.verified_by}</p>` : ''}
+                                                ${data.customer_info.verification_date ? `<p><strong>Verification Date:</strong> ${new Date(data.customer_info.verification_date).toLocaleString()}</p>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = documentsHtml;
+            } else {
+                content.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                        <h5>No documents found</h5>
+                        <p>This customer has not uploaded any documents yet.</p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 
+                            Ask the customer to upload their ID document and address proof from their portal.
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading documents:', error);
+            const content = document.getElementById('documentsContent');
+            content.innerHTML = `
+                <div class="text-center text-danger">
+                    <i class="fas fa-exclamation-circle fa-3x mb-3"></i>
+                    <h5>Error loading documents</h5>
+                    <p>Unable to load customer documents: ${error.message}</p>
+                    <button class="btn btn-outline-primary" onclick="viewDocuments(${customerId})">
+                        <i class="fas fa-retry"></i> Try Again
+                    </button>
+                </div>
+            `;
+        });
+}
+
+// Helper functions for document modal
+function openImageInNewTab(imageSrc) {
+    window.open(imageSrc, '_blank');
+}
+
+function downloadDocument(docUrl) {
+    const link = document.createElement('a');
+    link.href = docUrl;
+    link.download = docUrl.split('/').pop();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function quickVerify(customerId, status) {
+    verifyDocument(customerId, status);
+}
+
 // Document verification
 function verifyDocument(customerId, status) {
-    const notes = prompt(`Enter verification notes for ${status.toLowerCase()} status:`);
-    if (notes !== null) {
-        fetch(`/api/staff/document/verify/${customerId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                status: status,
-                notes: notes
-            })
+    let actionText, confirmMessage, notePrompt;
+    
+    switch(status) {
+        case 'Approved':
+            actionText = 'approve';
+            confirmMessage = 'Are you sure you want to approve this customer\'s documents?';
+            notePrompt = 'Enter approval notes (optional):';
+            break;
+        case 'Rejected':
+            actionText = 'reject';
+            confirmMessage = 'Are you sure you want to reject this customer\'s documents?';
+            notePrompt = 'Enter rejection reason (required):';
+            break;
+        case 'Pending':
+            actionText = 'reset to pending';
+            confirmMessage = 'Are you sure you want to reset this customer\'s documents to pending status?';
+            notePrompt = 'Enter notes for status reset (optional):';
+            break;
+        default:
+            alert('Invalid status');
+            return;
+    }
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    const notes = prompt(notePrompt);
+    
+    // For rejection, notes are required
+    if (status === 'Rejected' && (!notes || notes.trim() === '')) {
+        alert('Rejection reason is required!');
+        return;
+    }
+    
+    // Show loading state
+    const buttons = document.querySelectorAll(`button[onclick*="${customerId}"]`);
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    });
+    
+    fetch(`/api/staff/document/verify/${customerId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            status: status,
+            notes: notes || ''
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Document status updated successfully!');
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(`Documents ${status.toLowerCase()} successfully!`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+            // Re-enable buttons on error
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                // Restore original button text
+                if (btn.innerHTML.includes('Approve')) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Approve';
+                } else if (btn.innerHTML.includes('Reject')) {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Reject';
+                } else if (btn.innerHTML.includes('Reset')) {
+                    btn.innerHTML = '<i class="fas fa-clock"></i> Reset to Pending';
+                } else if (btn.innerHTML.includes('View')) {
+                    btn.innerHTML = '<i class="fas fa-eye"></i> View Docs';
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error verifying document:', error);
+        alert('Error verifying document: ' + error.message);
+        // Re-enable buttons on error
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            // Restore original button text
+            if (btn.innerHTML.includes('spinner')) {
+                if (btn.innerHTML.includes('Approve')) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Approve';
+                } else if (btn.innerHTML.includes('Reject')) {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Reject';
+                } else if (btn.innerHTML.includes('Reset')) {
+                    btn.innerHTML = '<i class="fas fa-clock"></i> Reset to Pending';
+                } else if (btn.innerHTML.includes('View')) {
+                    btn.innerHTML = '<i class="fas fa-eye"></i> View Docs';
+                }
             }
         });
-    }
+    });
 }
 
 // Confirm booking
