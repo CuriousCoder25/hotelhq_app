@@ -195,3 +195,7 @@ Screenshot*.png
 !project II documents/**/*.jpeg
 # Exclude the root screenshot that's already tracked (will remain in history)
 # Note: Screenshot 2025-05-31 221700.png in root is already tracked
+# Ignore project II documents directory (with spaces)
+# Ignore project II documents directory
+project II documents/
+project II documents/**
