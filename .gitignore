@@ -188,11 +188,7 @@ cython_debug/
 ersgauraDesktophotelhq_app
 # Personal screenshots in root (but keep project screenshots in documentation)
 Screenshot*.png
-*.png
-# Include only project documentation images
-!project II documents/**/*.png
-!project II documents/**/*.jpg
-!project II documents/**/*.jpeg
+
 # Exclude the root screenshot that's already tracked (will remain in history)
 # Note: Screenshot 2025-05-31 221700.png in root is already tracked
 # Ignore project II documents directory (with spaces)
