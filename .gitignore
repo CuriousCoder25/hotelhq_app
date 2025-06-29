@@ -86,7 +86,7 @@ logs/
 *.pid
 
 # Uploaded Files and User Content
-static/images/rooms/*
+# static/images/rooms/*  # Commented out to allow room images to be tracked
 static/documents/customers/*
 uploads/
 !static/images/rooms/.gitkeep
