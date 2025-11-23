@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+.env*
+
+# VS Code
+.vscode/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Migrations
+migrations/versions/__pycache__/
+
+# Static uploads
+app/static/uploads/*
+
+# Logs
+*.log
+
+# Test cache
+.cache/
+
+# Node modules
+node_modules/
+
+# Build
+build/
+dist/
+
+# Coverage
+htmlcov/
+.coverage
+
+# Others
+*.sqlite3
+*.db
+*.bak
+*.swp
+*.swo
+
+# Ignore compiled CSS/JS (if built)
+app/static/css/*.css
+app/static/js/*.js

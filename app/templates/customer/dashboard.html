@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center">
+    <h1 class="text-4xl font-bold">Welcome to your Dashboard, {{ current_user.username }}!</h1>
+    <p class="text-lg mt-4">From here you can manage your bookings and profile.</p>
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="{{ url_for('customer.view_rooms') }}" class="bg-blue-500 text-white p-6 rounded-lg shadow-md hover:bg-blue-600 transform hover:scale-105 transition duration-300 hover:shadow-xl">
+            <h2 class="text-2xl font-bold">Book a Room</h2>
+            <p>Find and book your perfect room.</p>
+        </a>
+        <a href="{{ url_for('customer.my_bookings') }}" class="bg-green-500 text-white p-6 rounded-lg shadow-md hover:bg-green-600 transform hover:scale-105 transition duration-300 hover:shadow-xl">
+            <h2 class="text-2xl font-bold">My Bookings</h2>
+            <p>View your booking history and status.</p>
+        </a>
+        <a href="{{ url_for('customer.profile') }}" class="bg-yellow-500 text-white p-6 rounded-lg shadow-md hover:bg-yellow-600 transform hover:scale-105 transition duration-300 hover:shadow-xl">
+            <h2 class="text-2xl font-bold">My Profile</h2>
+            <p>Update your personal information.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

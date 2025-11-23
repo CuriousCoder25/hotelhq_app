@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">{{ title }}</h1>
+    <div class="bg-white p-8 rounded-xl shadow-2xl overflow-x-auto transform hover:scale-[1.01] transition duration-300">
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr class="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg">
+                    <th class="py-4 px-4 rounded-tl-lg">Booking ID</th>
+                    <th class="py-4 px-4">Customer</th>
+                    <th class="py-4 px-4">Room</th>
+                    <th class="py-4 px-4">Check-in</th>
+                    <th class="py-4 px-4">Check-out</th>
+                    <th class="py-4 px-4">Total Price</th>
+                    <th class="py-4 px-4">Status</th>
+                    <th class="py-4 px-4">Payment</th>
+                    <th class="py-4 px-4">Documents</th>
+                    <th class="py-4 px-4 rounded-tr-lg">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr class="text-center hover:bg-gray-50 border-b border-gray-200 transition duration-200">
+                    <td class="py-3 px-4 font-semibold text-indigo-600">#{{ booking.booking_id }}</td>
+                    <td class="py-3 px-4 font-medium text-gray-700">{{ booking.user.username }}</td>
+                    <td class="py-3 px-4 text-gray-600">Room {{ booking.room.room_number }} <span class="text-sm text-gray-500">({{ booking.room.room_type }})</span></td>
+                    <td class="py-3 px-4 text-gray-600">{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-3 px-4 text-gray-600">{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-3 px-4 font-bold text-green-600">Rs. {{ booking.total_price }}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-4 py-2 rounded-full text-xs font-semibold shadow-md transform hover:scale-110 transition duration-300 inline-block {{ 'bg-gradient-to-r from-green-400 to-green-500 text-white' if booking.status == 'Confirmed' else 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' if booking.status == 'Pending' else 'bg-gradient-to-r from-blue-400 to-blue-500 text-white' }}">
+                            {{ booking.status }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-4 py-2 rounded-full text-xs font-semibold shadow-md transform hover:scale-110 transition duration-300 inline-block {{ 'bg-gradient-to-r from-green-400 to-green-500 text-white' if booking.payment_status == 'Paid' else 'bg-gradient-to-r from-red-400 to-red-500 text-white' }}">
+                            {{ booking.payment_status }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        {% if booking.document_path %}
+                            <a href="{{ url_for('static', filename='uploads/' + booking.document_path) }}" target="_blank" class="inline-block px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 text-xs font-medium">
+                                📄 View Doc
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400 text-sm">No document</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex flex-col gap-2">
+                            <a href="{{ url_for('staff.change_booking_status', booking_id=booking.booking_id) }}" class="inline-block px-3 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 text-xs font-medium">📋 Status</a>
+                            <a href="{{ url_for('staff.view_bill', booking_id=booking.booking_id) }}" class="inline-block px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 text-xs font-medium">💳 View Bill</a>
+                            <a href="{{ url_for('staff.verify_payment', booking_id=booking.booking_id) }}" class="inline-block px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 text-xs font-medium">✓ Verify Payment</a>
+                            {% if booking.status != 'Completed' %}
+                                <form action="{{ url_for('staff.checkout_booking', booking_id=booking.booking_id) }}" method="POST" class="inline-block">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="submit" value="🏁 Check Out" class="w-full px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 cursor-pointer text-xs font-medium" onclick="return confirm('Mark this booking as completed and make room available?');">
+                                </form>
+                            {% endif %}
+                            <form action="{{ url_for('staff.delete_booking', booking_id=booking.booking_id) }}" method="POST" class="inline-block">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="submit" value="🗑️ Delete" class="w-full px-3 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 cursor-pointer text-xs font-medium" onclick="return confirm('Are you sure you want to delete this booking?');">
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center py-8">
+                        <p class="text-gray-500 text-lg">📭 No bookings found.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

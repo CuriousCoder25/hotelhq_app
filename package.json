@@ -1,0 +1,16 @@
+{
+  "name": "hotelhq",
+  "version": "1.0.0",
+  "description": "Hotel Room Booking Web App",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css",
+    "watch:css": "tailwindcss -i ./app/static/css/input.css -o ./app/static/css/style.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tailwindcss": "^3.3.5"
+  }
+}
