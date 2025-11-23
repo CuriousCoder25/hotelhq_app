@@ -103,18 +103,21 @@ hotelhq/
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-## Licensing
+## License & Credit
 
-This hotel management app is available under two licenses:
+This project is available under **two licenses**:
 
-1. **AGPLv3 (Open Source)**  
-   - You can use, modify, and share this software for free,  
-   - But you **must release the source code** if you host it publicly.
+1. **AGPL-3.0 (Open Source)**
+   - You can use, modify, and share this software for free.
+   - **You must give proper credit**:
+     - Keep this notice in the code files.
+     - Mention the original repository in your documentation or README.
+   - You must release any modifications under the same license if you host it publicly.
 
-2. **Commercial License (Paid / Proprietary)**  
-   - Allows you to run the software privately, closed-source, and commercially,  
-   - Without releasing your modifications.  
-   - Contact <your email> for pricing and terms.
+2. **Commercial / Proprietary License (Paid)**
+   - Allows closed-source, private, or commercial use.
+   - You must **contact <gauravkathayat945@gmail.com> for a commercial license**.
+   - The license agreement will include credit requirements and other terms.
 
 
 ## FAQ
