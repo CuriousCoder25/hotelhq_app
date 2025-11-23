@@ -1,6 +1,8 @@
 # HotelHQ - Hotel Room Booking Web App
 
-![License: AGPL v3 + Commercial](https://img.shields.io/badge/License-AGPL--3.0-orange)
+![License: GK-OSNC 1.0](https://img.shields.io/badge/License-GK--OSNC%201.0-blue.svg)
+![Commercial License](https://img.shields.io/badge/Commercial-License%20Available-orange.svg)
+![Contributions Welcome](https://img.shields.io/badge/Contributions-Welcome-brightgreen.svg)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Flask](https://img.shields.io/badge/Flask-Framework-green)
 
@@ -103,22 +105,47 @@ hotelhq/
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-## License & Credit
+## 📜 License
 
-This project is available under **two licenses**:
+This project uses a dual-license model:
 
-1. **AGPL-3.0 (Open Source)**
-   - You can use, modify, and share this software for free.
-   - **You must give proper credit**:
-     - Keep this notice in the code files.
-     - Mention the original repository in your documentation or README.
-   - You must release any modifications under the same license if you host it publicly.
+### 🟦 GK-OSNC License 1.0 (Free, Non-Commercial)
 
-2. **Commercial / Proprietary License (Paid)**
-   - Allows closed-source, private, or commercial use.
-   - You must **contact <gauravkathayat945@gmail.com> for a commercial license**.
-   - The license agreement will include credit requirements and other terms.
+You may:
 
+- View, study, and learn from the source code  
+- Run and modify the software locally  
+- Submit contributions (PRs)
+
+You may *not*:
+
+- Use it commercially  
+- Redistribute the software  
+- Host it online  
+- Publicly fork or mirror it  
+- Include it in closed-source products  
+- Share modified versions publicly  
+
+This license protects the project while keeping it open to the community.
+
+Read the full license in `LICENSE.md`.
+
+---
+
+### 🟧 Commercial License (Paid)
+
+A commercial license is required if you want to:
+
+- Use the software in a business environment  
+- Host or deploy it publicly (SaaS, API, website)  
+- Integrate it into closed-source products  
+- Redistribute the software in any form  
+- Keep modifications private  
+
+To obtain a commercial license, contact:  
+📧 **gauravkathayat945@gmail.com**
+
+---
 
 ## FAQ
 
