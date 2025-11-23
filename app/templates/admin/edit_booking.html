@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">{{ title }}</h1>
+    <div class="bg-white p-8 rounded-xl shadow-2xl">
+        <div class="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
+            <h2 class="text-lg font-semibold text-indigo-700 mb-2">Booking Details</h2>
+            <p class="text-sm text-gray-600"><strong>Booking ID:</strong> #{{ booking.booking_id }}</p>
+            <p class="text-sm text-gray-600"><strong>Customer:</strong> {{ booking.user.username }} ({{ booking.user.email }})</p>
+            <p class="text-sm text-gray-600"><strong>Current Room:</strong> Room {{ booking.room.room_number }} - {{ booking.room.room_type }}</p>
+        </div>
+
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        {{ form.check_in_date.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.check_in_date(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
+                        {% if form.check_in_date.errors %}
+                            {% for error in form.check_in_date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div>
+                        {{ form.check_out_date.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                        {{ form.check_out_date(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
+                        {% if form.check_out_date.errors %}
+                            {% for error in form.check_out_date.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    {{ form.room_id.label(class="block text-sm font-medium text-gray-700 mb-2") }}
+                    {{ form.room_id(class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
+                    {% if form.room_id.errors %}
+                        {% for error in form.room_id.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-800">
+                        <strong>Note:</strong> Use the <strong>Status</strong> and <strong>Payment</strong> buttons from the bookings list to update booking status and payment status.
+                    </p>
+                </div>
+
+                <div class="flex gap-4 mt-6">
+                    {{ form.submit(class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 font-semibold") }}
+                    <a href="{{ url_for('admin.manage_bookings') }}" class="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-1 hover:scale-105 transition duration-300 font-semibold">
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

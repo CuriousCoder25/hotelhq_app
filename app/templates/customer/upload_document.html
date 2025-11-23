@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">{{ title }}</h1>
+    
+    <!-- Booking Details Card -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 class="text-xl font-bold mb-4">Booking Details</h2>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <p class="text-gray-600">Booking ID:</p>
+                <p class="font-semibold">{{ booking.booking_id }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Room:</p>
+                <p class="font-semibold">Room {{ booking.room.room_number }} ({{ booking.room.room_type }})</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Check-in Date:</p>
+                <p class="font-semibold">{{ booking.check_in_date.strftime('%Y-%m-%d') }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Check-out Date:</p>
+                <p class="font-semibold">{{ booking.check_out_date.strftime('%Y-%m-%d') }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600">Current Document:</p>
+                <p class="font-semibold">
+                    {% if booking.document_path %}
+                        <a href="{{ url_for('static', filename='uploads/' + booking.document_path) }}" target="_blank" class="text-blue-500 hover:underline">View Document</a>
+                    {% else %}
+                        <span class="text-gray-400">No document uploaded</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Document Upload Form -->
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <h3 class="text-xl font-bold mb-4">Upload Document</h3>
+        <p class="text-gray-600 mb-4">Upload a legal document (ID, passport, etc.) for this booking. Accepted formats: PDF, JPG, JPEG, PNG</p>
+        <form method="POST" action="" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="space-y-4">
+                <div>
+                    {{ form.document.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.document(class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md") }}
+                    {% if form.document.errors %}
+                        <div class="text-red-500 text-sm mt-1">
+                            {% for error in form.document.errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex gap-4">
+                    {{ form.submit(class="px-6 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transform hover:scale-105 transition duration-200 shadow-md hover:shadow-lg") }}
+                    <a href="{{ url_for('customer.my_bookings') }}" class="px-6 py-2 font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transform hover:scale-105 transition duration-200">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

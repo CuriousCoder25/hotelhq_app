@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">{{ title }}</h1>
+    <div class="bg-white p-8 rounded-xl shadow-2xl transform hover:scale-[1.01] transition duration-300">
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr class="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+                    <th class="py-4 px-4 rounded-tl-lg">Room</th>
+                    <th class="py-4 px-4">Check-in</th>
+                    <th class="py-4 px-4">Check-out</th>
+                    <th class="py-4 px-4">Total Price</th>
+                    <th class="py-4 px-4">Status</th>
+                    <th class="py-4 px-4 rounded-tr-lg">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr class="text-center border-b border-gray-200 hover:bg-gray-50 transition duration-200">
+                    <td class="py-4 px-4 font-semibold text-gray-700">Room {{ booking.room.room_number }} <span class="text-gray-500 text-sm">({{ booking.room.room_type }})</span></td>
+                    <td class="py-4 px-4 text-gray-600">{{ booking.check_in_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-4 px-4 text-gray-600">{{ booking.check_out_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-4 px-4 font-bold text-green-600">Rs. {{ booking.total_price }}</td>
+                    <td class="py-4 px-4">
+                        <span class="px-4 py-2 rounded-full text-sm font-semibold shadow-lg transform hover:scale-110 transition duration-300 inline-block {{ 'bg-gradient-to-r from-green-400 to-green-500 text-white' if booking.status == 'Confirmed' else 'bg-gradient-to-r from-yellow-400 to-yellow-500 text-white' if booking.status == 'Pending' else 'bg-gradient-to-r from-blue-400 to-blue-500 text-white' }}">
+                            {{ booking.status }}
+                        </span>
+                    </td>
+                    <td class="py-4 px-4">
+                        <a href="{{ url_for('customer.upload_document', booking_id=booking.booking_id) }}" 
+                           class="inline-block px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition duration-300 mr-2 font-medium">
+                            📄 Upload Doc
+                        </a>
+                        <a href="{{ url_for('customer.download_bill', booking_id=booking.booking_id) }}" 
+                           class="inline-block px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition duration-300 font-medium">
+                            💳 View Bill
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-8">
+                        <div class="text-gray-500 text-lg">
+                            <p class="mb-2">📭 You have no bookings yet.</p>
+                            <a href="{{ url_for('customer.view_rooms') }}" 
+                               class="inline-block mt-4 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:scale-105 transition duration-300 font-semibold">
+                                🏨 Browse Rooms
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

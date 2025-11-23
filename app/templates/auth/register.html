@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold text-center">{{ title }}</h2>
+        <form method="POST" action="" id="registrationForm">
+            {{ form.hidden_tag() }}
+            <div class="space-y-4">
+                <div>
+                    {{ form.username.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.username(class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", id="username") }}
+                    <p id="username-error" class="text-red-500 text-xs mt-1 hidden"></p>
+                    <p id="username-success" class="text-green-500 text-xs mt-1 hidden">✓ Username is valid</p>
+                    {% if form.username.errors %}
+                        {% for error in form.username.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    {{ form.email.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.email(class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", id="email") }}
+                    <p id="email-error" class="text-red-500 text-xs mt-1 hidden"></p>
+                    <p id="email-success" class="text-green-500 text-xs mt-1 hidden">✓ Email format is valid</p>
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    {{ form.password.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.password(class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", id="password") }}
+                    <div id="password-strength" class="mt-2 space-y-1">
+                        <div class="flex items-center text-xs">
+                            <span id="length-check" class="text-gray-400">○ At least 8 characters</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <span id="uppercase-check" class="text-gray-400">○ One uppercase letter</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <span id="lowercase-check" class="text-gray-400">○ One lowercase letter</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <span id="number-check" class="text-gray-400">○ One number</span>
+                        </div>
+                        <div class="flex items-center text-xs">
+                            <span id="special-check" class="text-gray-400">○ One special character (!@#$% etc.)</span>
+                        </div>
+                    </div>
+                    {% if form.password.errors %}
+                        {% for error in form.password.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                    {{ form.confirm_password.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ form.confirm_password(class="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500", id="confirm_password") }}
+                    <p id="confirm-error" class="text-red-500 text-xs mt-1 hidden"></p>
+                    <p id="confirm-success" class="text-green-500 text-xs mt-1 hidden">✓ Passwords match</p>
+                    {% if form.confirm_password.errors %}
+                        {% for error in form.confirm_password.errors %}
+                            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div>
+                                    <div>
+                    {{ form.submit(class="w-full px-4 py-2 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transform hover:scale-105 transition duration-200 shadow-md hover:shadow-lg") }}
+                </div>
+                </div>
+            </div>
+        </form>
+        <p class="text-sm text-center text-gray-600">
+            Already have an account? <a href="{{ url_for('auth.login') }}" class="font-medium text-blue-600 hover:text-blue-500">Log in</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    
+    // Username validation
+    usernameInput.addEventListener('input', function() {
+        const username = this.value;
+        const errorMsg = document.getElementById('username-error');
+        const successMsg = document.getElementById('username-success');
+        
+        if (username.length === 0) {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.remove('border-red-500', 'border-green-500');
+        } else if (username.length < 2) {
+            errorMsg.textContent = 'Username must be at least 2 characters';
+            errorMsg.classList.remove('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.add('border-red-500');
+            this.classList.remove('border-green-500');
+        } else if (username.length > 150) {
+            errorMsg.textContent = 'Username must be less than 150 characters';
+            errorMsg.classList.remove('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.add('border-red-500');
+            this.classList.remove('border-green-500');
+        } else {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.remove('hidden');
+            this.classList.remove('border-red-500');
+            this.classList.add('border-green-500');
+        }
+    });
+    
+    // Email validation
+    emailInput.addEventListener('input', function() {
+        const email = this.value;
+        const errorMsg = document.getElementById('email-error');
+        const successMsg = document.getElementById('email-success');
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email.length === 0) {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.remove('border-red-500', 'border-green-500');
+        } else if (!emailRegex.test(email)) {
+            errorMsg.textContent = 'Please enter a valid email address';
+            errorMsg.classList.remove('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.add('border-red-500');
+            this.classList.remove('border-green-500');
+        } else {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.remove('hidden');
+            this.classList.remove('border-red-500');
+            this.classList.add('border-green-500');
+        }
+    });
+    
+    // Password strength validation
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        
+        // Check length
+        const lengthCheck = document.getElementById('length-check');
+        if (password.length >= 8) {
+            lengthCheck.textContent = '✓ At least 8 characters';
+            lengthCheck.classList.remove('text-gray-400');
+            lengthCheck.classList.add('text-green-500', 'font-semibold');
+        } else {
+            lengthCheck.textContent = '○ At least 8 characters';
+            lengthCheck.classList.remove('text-green-500', 'font-semibold');
+            lengthCheck.classList.add('text-gray-400');
+        }
+        
+        // Check uppercase
+        const uppercaseCheck = document.getElementById('uppercase-check');
+        if (/[A-Z]/.test(password)) {
+            uppercaseCheck.textContent = '✓ One uppercase letter';
+            uppercaseCheck.classList.remove('text-gray-400');
+            uppercaseCheck.classList.add('text-green-500', 'font-semibold');
+        } else {
+            uppercaseCheck.textContent = '○ One uppercase letter';
+            uppercaseCheck.classList.remove('text-green-500', 'font-semibold');
+            uppercaseCheck.classList.add('text-gray-400');
+        }
+        
+        // Check lowercase
+        const lowercaseCheck = document.getElementById('lowercase-check');
+        if (/[a-z]/.test(password)) {
+            lowercaseCheck.textContent = '✓ One lowercase letter';
+            lowercaseCheck.classList.remove('text-gray-400');
+            lowercaseCheck.classList.add('text-green-500', 'font-semibold');
+        } else {
+            lowercaseCheck.textContent = '○ One lowercase letter';
+            lowercaseCheck.classList.remove('text-green-500', 'font-semibold');
+            lowercaseCheck.classList.add('text-gray-400');
+        }
+        
+        // Check number
+        const numberCheck = document.getElementById('number-check');
+        if (/[0-9]/.test(password)) {
+            numberCheck.textContent = '✓ One number';
+            numberCheck.classList.remove('text-gray-400');
+            numberCheck.classList.add('text-green-500', 'font-semibold');
+        } else {
+            numberCheck.textContent = '○ One number';
+            numberCheck.classList.remove('text-green-500', 'font-semibold');
+            numberCheck.classList.add('text-gray-400');
+        }
+        
+        // Check special character
+        const specialCheck = document.getElementById('special-check');
+        if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
+            specialCheck.textContent = '✓ One special character (!@#$% etc.)';
+            specialCheck.classList.remove('text-gray-400');
+            specialCheck.classList.add('text-green-500', 'font-semibold');
+        } else {
+            specialCheck.textContent = '○ One special character (!@#$% etc.)';
+            specialCheck.classList.remove('text-green-500', 'font-semibold');
+            specialCheck.classList.add('text-gray-400');
+        }
+        
+        // Update password input border
+        const allValid = password.length >= 8 && 
+                        /[A-Z]/.test(password) && 
+                        /[a-z]/.test(password) && 
+                        /[0-9]/.test(password) && 
+                        /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password);
+        
+        if (password.length === 0) {
+            passwordInput.classList.remove('border-red-500', 'border-green-500');
+        } else if (allValid) {
+            passwordInput.classList.remove('border-red-500');
+            passwordInput.classList.add('border-green-500');
+        } else {
+            passwordInput.classList.add('border-red-500');
+            passwordInput.classList.remove('border-green-500');
+        }
+        
+        // Also check confirm password if it has value
+        if (confirmPasswordInput.value) {
+            confirmPasswordInput.dispatchEvent(new Event('input'));
+        }
+    });
+    
+    // Confirm password validation
+    confirmPasswordInput.addEventListener('input', function() {
+        const password = passwordInput.value;
+        const confirmPassword = this.value;
+        const errorMsg = document.getElementById('confirm-error');
+        const successMsg = document.getElementById('confirm-success');
+        
+        if (confirmPassword.length === 0) {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.remove('border-red-500', 'border-green-500');
+        } else if (password !== confirmPassword) {
+            errorMsg.textContent = 'Passwords do not match';
+            errorMsg.classList.remove('hidden');
+            successMsg.classList.add('hidden');
+            this.classList.add('border-red-500');
+            this.classList.remove('border-green-500');
+        } else {
+            errorMsg.classList.add('hidden');
+            successMsg.classList.remove('hidden');
+            this.classList.remove('border-red-500');
+            this.classList.add('border-green-500');
+        }
+    });
+});
+</script>
+{% endblock %}
