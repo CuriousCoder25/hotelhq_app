@@ -1,6 +1,6 @@
 # HotelHQ - Hotel Room Booking Web App
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![License: AGPL v3 + Commercial](https://img.shields.io/badge/License-AGPL--3.0-orange)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Flask](https://img.shields.io/badge/Flask-Framework-green)
 
@@ -103,9 +103,19 @@ hotelhq/
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-## License
+## Licensing
 
-This project is licensed under the MIT License.
+This hotel management app is available under two licenses:
+
+1. **AGPLv3 (Open Source)**  
+   - You can use, modify, and share this software for free,  
+   - But you **must release the source code** if you host it publicly.
+
+2. **Commercial License (Paid / Proprietary)**  
+   - Allows you to run the software privately, closed-source, and commercially,  
+   - Without releasing your modifications.  
+   - Contact <your email> for pricing and terms.
+
 
 ## FAQ
 
