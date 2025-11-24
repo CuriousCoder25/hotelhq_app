@@ -25,6 +25,16 @@ HotelHQ is a full-featured web application for booking and managing hotel rooms,
 - **Bulk Update Room Images**: Script for updating room images in bulk.
 - **Sample Data Seeding**: Script to seed sample data for testing.
 
+## ⚠️ Database Notice
+
+The MySQL database required for HotelHQ is **not included** in this repository.  
+Because the database schema and data are **proprietary**, they are not publicly provided at this time.  
+As a result, the application **cannot be run locally** without the required database setup.
+
+The database files will be **provided soon**, or updates will be made to support a public development setup.
+
+In the meantime, you can view the **Live Demo** linked above.
+
 ## Project Structure
 
 ```
