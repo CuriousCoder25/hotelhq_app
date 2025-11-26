@@ -205,7 +205,9 @@ def change_booking_status(booking_id):
 @staff_required
 def view_bill(booking_id):
     booking = Booking.query.get_or_404(booking_id)
-    return render_template('customer/bill.html', title='Invoice', booking=booking)
+    num_nights = max(1, (booking.check_out_date - booking.check_in_date).days)
+    subtotal = booking.room.price_per_night * num_nights        
+    return render_template('customer/bill.html', title='Invoice', booking=booking, subtotal=subtotal)
 
 @staff.route('/api/room/<int:room_id>/booked-dates')
 @login_required
