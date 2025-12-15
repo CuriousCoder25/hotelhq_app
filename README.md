@@ -1,4 +1,4 @@
-# HotelHQ - Hotel Room Booking Web App
+# HotelHQ - Bringing Ease to Your Booking Expirience
 
 ![License: GK-OSNC 1.0](https://img.shields.io/badge/License-GK--OSNC%201.0-blue.svg)
 ![Commercial License](https://img.shields.io/badge/Commercial-License%20Available-orange.svg)
